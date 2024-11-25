@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include "ChessBoard.hpp"
+#include <iostream>
 
 int main()
 {
@@ -12,6 +13,10 @@ int main()
         while(window.pollEvent(event)){
             if(event.type == sf::Event::Closed){
                 window.close();
+            }
+
+            if(event.type == sf::Event::MouseButtonPressed) {
+                chessBoard.handleMouseInput(window);
             }
         
     }
