@@ -1,5 +1,5 @@
 #include "ChessBoard.hpp"
-#include <iostream>
+#include <vector>
 
 ChessBoard::ChessBoard(): currentTurn(WHITE_TURN){
     loadTextures();
@@ -80,7 +80,6 @@ void ChessBoard::handleMouseInput(sf::RenderWindow& window)
 
     if(board[x][y].type != EMPTY && board[x][y].color == currentPlayerColor){
         selectedPiece = &board[x][y];
-        //std::cout << "Selected Piece at (" << x << ", " << y << ")" << std::endl;
         highlightAvailableMoves(x,y);
     }else if(selectedPiece) 
     {
@@ -88,12 +87,12 @@ void ChessBoard::handleMouseInput(sf::RenderWindow& window)
         if(selectedPiece->isValidMove(selectedPiece->sprite.getPosition().x / tileSize, selectedPiece->sprite.getPosition().y / tileSize, x, y, board,enPassantTarget))
         {
             movePiece(selectedPiece,x,y);
+            highlightCircles.clear();
             nextTurn();
         }
         selectedPiece = nullptr;
     }
 }
-
 
 std::string ChessBoard::pieceTypeName(PieceType type){
     switch(type) {
@@ -123,16 +122,29 @@ void ChessBoard::draw(sf::RenderWindow& window) {
             } 
         }
     }
+
+    // Draw all highlight circles
+    for (const auto &circle : highlightCircles) {
+        window.draw(circle);
+    }
+}
+
+void ChessBoard::addHighlightCircle(int i, int j, sf::Color color) {
+    sf::CircleShape circle(boardSquares[i][j].getSize().x / 5.0f);
+    circle.setFillColor(color);
+    circle.setOrigin(circle.getRadius(), circle.getRadius());
+    circle.setPosition(
+        boardSquares[i][j].getPosition().x + boardSquares[i][j].getSize().x / 2.0f,
+        boardSquares[i][j].getPosition().y + boardSquares[i][j].getSize().y / 2.0f
+    );
+
+    highlightCircles.push_back(circle);
 }
 
 void ChessBoard::highlightAvailableMoves(int x, int y)
 {
-    // Reset all squares to their original colors
-    for (int i = 0; i < boardSize; ++i) {
-        for (int j = 0; j < boardSize; ++j) {
-            boardSquares[i][j].setFillColor((i + j) % 2 == 0 ? sf::Color(235, 235, 208) : sf::Color(119, 148, 85));
-        }
-    }
+    // Clear Previous Highlights
+    highlightCircles.clear();
 
     // Highlight moves for Pawn
     if (selectedPiece->type == PAWN) {
@@ -140,22 +152,22 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
 
         // Highlight move direction (forward)
         if (y + direction >= 0 && y + direction < boardSize && board[x][y + direction].type == EMPTY) {
-            boardSquares[x][y + direction].setFillColor(sf::Color::Green);
+            addHighlightCircle(x, y + direction, sf::Color(0, 0, 0, 128));
         }
 
         // Highlight double move on initial pawn move
         if ((selectedPiece->color == WHITE && y == 6) || (selectedPiece->color == BLACK && y == 1)) {
             if (y + 2 * direction >= 0 && y + 2 * direction < boardSize && board[x][y + 2 * direction].type == EMPTY) {
-                boardSquares[x][y + 2 * direction].setFillColor(sf::Color::Green);
+                addHighlightCircle(x, y + 2 *direction, sf::Color(0, 0, 0, 128));
             }
         }
 
         // Highlight captures
         if (x - 1 >= 0 && y + direction >= 0 && y + direction < boardSize && board[x - 1][y + direction].type != EMPTY && board[x - 1][y + direction].color != selectedPiece->color) {
-            boardSquares[x - 1][y + direction].setFillColor(sf::Color::Red);
+            addHighlightCircle(x - 1, y + direction, sf::Color(255, 0, 0, 128));
         }
         if (x + 1 < boardSize && y + direction >= 0 && y + direction < boardSize && board[x + 1][y + direction].type != EMPTY && board[x + 1][y + direction].color != selectedPiece->color) {
-            boardSquares[x + 1][y + direction].setFillColor(sf::Color::Red);
+            addHighlightCircle(x + 1, y + direction, sf::Color(255, 0, 0, 128));
         }
     }
     
@@ -175,9 +187,9 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
             if (newX >= 0 && newX < boardSize && newY >= 0 && newY < boardSize) {
                 // Highlight if the square is empty or contains an opponent's piece
                 if (board[newX][newY].type == EMPTY) {
-                    boardSquares[newX][newY].setFillColor(sf::Color::Green);
+                    addHighlightCircle(newX, newY, sf::Color(0, 0, 0, 128));
                 } else if (board[newX][newY].color != selectedPiece->color) {
-                    boardSquares[newX][newY].setFillColor(sf::Color::Red);
+                    addHighlightCircle(newX, newY, sf::Color(255, 0, 0, 128));
                 }
             }
         }
@@ -204,11 +216,11 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
 
             // If the square is empty, highlight it
             if (board[newX][newY].type == EMPTY) {
-                boardSquares[newX][newY].setFillColor(sf::Color::Green);
+                addHighlightCircle(newX, newY, sf::Color(0, 0, 0, 128));
             }
             // If the square contains a piece, highlight it if it's an opponent's piece, then stop
             else if (board[newX][newY].color != selectedPiece->color) {
-                boardSquares[newX][newY].setFillColor(sf::Color::Red);
+                addHighlightCircle(newX, newY, sf::Color(255, 0, 0, 128));
                 break;
             }
             // Stop if the square contains a piece of the same color
@@ -233,10 +245,10 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
             // Traverse in the current direction until the board edge or a piece is hit
             while (currentX >= 0 && currentX < boardSize && currentY >= 0 && currentY < boardSize) {
                 if (board[currentX][currentY].type == EMPTY) {
-                    boardSquares[currentX][currentY].setFillColor(sf::Color::Green);
+                    addHighlightCircle(currentX, currentY, sf::Color(0, 0, 0, 128));
                 } else {
                     if (board[currentX][currentY].color != selectedPiece->color) {
-                        boardSquares[currentX][currentY].setFillColor(sf::Color::Red);
+                        addHighlightCircle(currentX, currentY, sf::Color(255, 0, 0, 128));
                     }
                     break; // Stop further movement in this direction if a piece is encountered
                 }
@@ -253,9 +265,11 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
     for (int i = x + 1; i < boardSize; ++i) {
         if (board[i][y].type == EMPTY) {
             boardSquares[i][y].setFillColor(sf::Color::Green);
+            addHighlightCircle(i, y, sf::Color(0, 0, 0, 128));
+            
         } else {
             if (board[i][y].color != selectedPiece->color) {
-                boardSquares[i][y].setFillColor(sf::Color::Red);
+                addHighlightCircle(i, y, sf::Color(255, 0, 0, 128));
             }
             break; // Block path
         }
@@ -264,10 +278,10 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
     // Horizontal moves to the left
     for (int i = x - 1; i >= 0; --i) {
         if (board[i][y].type == EMPTY) {
-            boardSquares[i][y].setFillColor(sf::Color::Green);
+            addHighlightCircle(i, y, sf::Color(0, 0, 0, 128));
         } else {
             if (board[i][y].color != selectedPiece->color) {
-                boardSquares[i][y].setFillColor(sf::Color::Red);
+                addHighlightCircle(i, y, sf::Color(255, 0, 0, 128));
             }
             break; // Block path
         }
@@ -276,10 +290,10 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
     // Vertical moves upwards
     for (int j = y - 1; j >= 0; --j) {
         if (board[x][j].type == EMPTY) {
-            boardSquares[x][j].setFillColor(sf::Color::Green);
+            addHighlightCircle(x, j, sf::Color(0, 0, 0, 128));
         } else {
             if (board[x][j].color != selectedPiece->color) {
-                boardSquares[x][j].setFillColor(sf::Color::Red);
+                addHighlightCircle(x, j, sf::Color(255, 0, 0, 128));
             }
             break; // Block path
         }
@@ -288,10 +302,10 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
     // Vertical moves downwards
     for (int j = y + 1; j < boardSize; ++j) {
         if (board[x][j].type == EMPTY) {
-            boardSquares[x][j].setFillColor(sf::Color::Green);
+            addHighlightCircle(x, j, sf::Color(0, 0, 0, 128));
         } else {
             if (board[x][j].color != selectedPiece->color) {
-                boardSquares[x][j].setFillColor(sf::Color::Red);
+                addHighlightCircle(x, j, sf::Color(255, 0, 0, 128));
             }
             break; // Block path
         }
@@ -300,6 +314,7 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
 
     // Highlight moves for King 
     if (selectedPiece->type == KING) {
+        
         // Get the position of the opponent's King
         int opponentKingX = -1, opponentKingY = -1;
         for (int i = 0; i < boardSize; ++i) {
@@ -356,17 +371,80 @@ void ChessBoard::highlightAvailableMoves(int x, int y)
                     if (!inCheck && !adjacentToOpponentKing) {
                         // The King can move to an empty square
                         if (board[newX][newY].type == EMPTY) {
-                            boardSquares[newX][newY].setFillColor(sf::Color::Green);
+                            addHighlightCircle(newX, newY, sf::Color(0, 0, 0, 128));
                         }
                         // The King can capture an opponent's piece (not the same color)
                         else if (board[newX][newY].color != selectedPiece->color) {
-                            boardSquares[newX][newY].setFillColor(sf::Color::Red);
+                            addHighlightCircle(newX, newY, sf::Color(255, 0, 0, 128));
                         }
                     }
                 }
             }
         }
+        
+        if(!selectedPiece->hasMoved){
+            int y = (selectedPiece->color == WHITE) ? 7 : 0;
+            int x = 4;
+            
+                if (!board[7][y].hasMoved && board[5][y].type == EMPTY && board[6][y].type == EMPTY &&
+                !isSquareAttacked(x, y, selectedPiece) && !isSquareAttacked(x + 1, y, selectedPiece) && !isSquareAttacked(x + 2, y, selectedPiece)) {
+                addHighlightCircle(6, y, sf::Color(0, 0, 0, 128));
+            }
+            // Castling queen-side
+            if (!board[0][y].hasMoved && board[1][y].type == EMPTY && board[2][y].type == EMPTY && board[3][y].type == EMPTY &&
+                !isSquareAttacked(x, y, selectedPiece) && !isSquareAttacked(x - 1, y, selectedPiece) && !isSquareAttacked(x - 2, y, selectedPiece)) {
+                addHighlightCircle(2, y, sf::Color(0, 0, 0, 128));
+            }
+        }
     }
+    
+    // Iterate over the board to validate and highlight moves
+    for (int i = 0; i < boardSize; ++i) {
+        for (int j = 0; j < boardSize; ++j) {
+            // Check if there is a highlight circle for the square (i, j)
+            bool hasHighlight = false;
+            for (const auto& circle : highlightCircles) {
+                // Check if the circle corresponds to the position of the square
+                if (circle.getPosition() == sf::Vector2f(
+                        boardSquares[i][j].getPosition().x + boardSquares[i][j].getSize().x / 2.0f,
+                        boardSquares[i][j].getPosition().y + boardSquares[i][j].getSize().y / 2.0f)) {
+                    hasHighlight = true;
+                    break;
+                }
+            }
+
+            // If the square has a highlight and the move is invalid under check
+            if (hasHighlight) {
+                if (!selectedPiece->isMoveValidUnderCheck(x, y, i, j, board)) {
+                    // If the move is invalid, make the highlight transparent
+                    setHighlightToTransparent(i, j);
+                }
+            }
+        }
+    }
+}
+
+void ChessBoard::setHighlightToTransparent(int i, int j) {
+    // Iterate through all the highlight circles and set the matching one to transparent
+    for (auto& circle : highlightCircles) {
+        if (circle.getPosition() == sf::Vector2f(
+            boardSquares[i][j].getPosition().x + boardSquares[i][j].getSize().x / 2.0f,
+            boardSquares[i][j].getPosition().y + boardSquares[i][j].getSize().y / 2.0f)) {
+            circle.setFillColor(sf::Color::Transparent);  // Make the circle transparent
+            return;  // Exit the function after setting the highlight to transparent
+        }
+    }
+}
+
+bool ChessBoard::isSquareAttacked(int x,int y,Piece *piece){
+    for(int j = 0; j < 8; ++j){
+        for(int i = 0; i < 8; ++i){
+            if(board[i][j].type != EMPTY && board[i][j].color != piece->color && board[i][j].isValidMove(i,j,x,y,board)){
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void ChessBoard::movePiece(Piece *piece, int x, int y){
@@ -399,7 +477,6 @@ void ChessBoard::movePiece(Piece *piece, int x, int y){
         board[rookStartX][y] = Piece();
     } 
 
-
     if (piece->type == PAWN && x == enPassantTarget.first && y == enPassantTarget.second) {
         // Remove the captured pawn (opponent's pawn)
         int capturedPawnY = (piece->color == WHITE) ? y + 1 : y - 1;
@@ -427,3 +504,4 @@ void ChessBoard::nextTurn() {
 
     currentTurn = (currentTurn == WHITE_TURN) ? BLACK_TURN : WHITE_TURN;
 }
+

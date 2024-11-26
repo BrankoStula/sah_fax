@@ -20,6 +20,7 @@ class ChessBoard{
     Piece* selectedPiece = nullptr;
     Turn currentTurn;
     std::pair<int,int> enPassantTarget = {-1,-1};
+    std::vector<sf::CircleShape> highlightCircles;
     
 
     public:
@@ -36,6 +37,11 @@ class ChessBoard{
     //Getters
     static int getBoardSize();
     static int getTileSize(); 
+
+    //Helpers 
+    bool isSquareAttacked(int x,int y,Piece *piece);
+    void addHighlightCircle(int x,int y,sf::Color color);
+    void setHighlightToTransparent(int i, int j);
 
     //Player inputs
     void handleMouseInput(sf::RenderWindow& window);

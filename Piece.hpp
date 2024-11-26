@@ -16,9 +16,9 @@ class Piece{
         Piece(PieceType type=EMPTY, Color color = NONE);
 
         void setSprite(const sf::Texture &texture);
-        bool isValidMove(int startX,int startY,int endX, int endY, Piece board[][8],std::pair<int, int> enPassantTarget);
-        bool isKingInCheck(int startX, int startY,int endX,int endY, Piece board[][8],std::pair<int, int> enPassantTarget);
-        bool isMoveValidUnderCheck(int startX, int startY, int endX, int endY, Piece board[][8],std::pair<int, int> enPassantTarget);
+        bool isValidMove(int startX,int startY,int endX, int endY, Piece board[][8],std::pair<int, int> enPassantTarget = {-1,-1});
+        bool isKingInCheck(int startX, int startY,int endX,int endY, Piece board[][8],std::pair<int, int> enPassantTarget = {-1, -1});
+        bool isMoveValidUnderCheck(int startX, int startY, int endX, int endY, Piece board[][8],std::pair<int, int> enPassantTarget = {-1 ,-1});
 };
 
 #endif
